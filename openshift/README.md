@@ -287,11 +287,13 @@ updating the push kubeconfig alone does not establish connectivity.
 
 ### One-time bootstrap
 
-Two credentials must be set up once (neither is in GitOps, like the other
-secrets above). You need to be logged in to **both** clusters.
+Two credentials must be set up at bootstrap (neither is in GitOps, like the
+other secrets above). You need to be logged in to **both** clusters.
 
-**1. Writer ServiceAccount in this project (gateway cluster).** Grants the
-rotation CronJob permission to write only the `konflux-bot-0-token` Secret here:
+**1. Writer ServiceAccount in this project (gateway cluster).** Its Role grants
+`create` for **any Secret** in this namespace. It grants `get`, `update`, and
+`patch` only for `konflux-bot-0-token`. Kubernetes RBAC cannot restrict
+top-level `create` by resource name.
 
 ```bash
 oc apply -n jotnar-ymir--jotnar-ymir -f - <<EOF
@@ -329,15 +331,18 @@ roleRef:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: konflux-token-writer-token
+  name: konflux-token-writer-token-20261116
   annotations:
     kubernetes.io/service-account.name: konflux-token-writer
 type: kubernetes.io/service-account-token
 EOF
 ```
 
-The manually-created `konflux-token-writer-token` Secret yields a **long-lived**
-token (no expiry), so this delivery credential does not itself need rotating.
+The manually created `konflux-token-writer-token-20261116` Secret is the current
+production source for a **long-lived** token with no expiry. To rotate it,
+create a token Secret with a new name, update the kubeconfig stored in Konflux,
+verify a rotation Job, and delete the prior token Secret. Recreating a Secret
+with the same name reproduced its old token on this cluster on 2026-11-16.
 
 **2. Push kubeconfig on `kflux-rhel-p01`.** Build a kubeconfig that authenticates
 as `konflux-token-writer` against this cluster and store it in `ymir-tenant`,
@@ -347,8 +352,8 @@ where the CronJob mounts it:
 # Still logged in to the gateway cluster:
 SERVER=https://api.prod-scale-spoke1-dc-rdu3.prod-scale-mgmthub1-dc-rdu3.itup.redhat.com:6443
 NS=jotnar-ymir--jotnar-ymir
-TOKEN=$(oc -n "$NS" get secret konflux-token-writer-token -o jsonpath='{.data.token}' | base64 -d)
-CA=$(oc -n "$NS" get secret konflux-token-writer-token -o jsonpath='{.data.ca\.crt}')  # already base64
+TOKEN=$(oc -n "$NS" get secret konflux-token-writer-token-20261116 -o jsonpath='{.data.token}' | base64 -d)
+CA=$(oc -n "$NS" get secret konflux-token-writer-token-20261116 -o jsonpath='{.data.ca\.crt}')  # already base64
 cat > push-kubeconfig <<EOF
 apiVersion: v1
 kind: Config

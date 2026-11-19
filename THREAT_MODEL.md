@@ -89,6 +89,7 @@ redirects and other caller-supplied URLs before making a request.
 | Kerberos keytabs (personal + `redhat-ymir-agent.keytab` prod) | Enable passwordless authentication and user impersonation against internal Red Hat systems (Brew/Koji, dist-git SSH) | critical |
 | GitLab PAT (`redhat-ymir-agent.gitlab.token`) | OAuth2 token with write access to `gitlab.com` dist-git repos and MRs | critical |
 | Konflux `konflux-bot-0` service-account token | Short-lived token mounted in the MCP gateway, allowing PipelineRun and Secret operations and authenticated build-result reads in `ymir-tenant` | critical |
+| Konflux push kubeconfig (`konflux-token-push-kubeconfig`) | Holds a long-lived Ymir `konflux-token-writer` service-account token. It can create any Secret in the Ymir namespace and get, update, or patch `konflux-bot-0-token`. | critical |
 | Konflux git-auth Secret (`GITLAB_TOKEN`) | Temporary copy of the gateway's GitLab token, used by the PipelineRun to clone the pushed fork commit | critical |
 | Source, patches, and spec-file changes produced by agents | Content that flows directly into RHEL/CentOS Stream builds if merged | critical |
 | Build-validation result and RPM pipeline definition | Integrity of the build status and executable pipeline code used to accept or diagnose an agent's change | high |
